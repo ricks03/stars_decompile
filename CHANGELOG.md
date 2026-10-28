@@ -43,6 +43,9 @@ produce different results from a 2.6j host for the same turn.
 
 ### Fixed
 
+- `PszPlayerName` now trims an all-space name without moving its pointer
+  before the start of the local buffer. Such a name displays the usual
+  fallback, `No Name`. Turn generation and file formats are unchanged.
 - `BattlePlansDlg` no longer reads before a battle plan's name when copying
   one with fewer than three characters. It still adds the usual ` (2)`
   suffix. Turn generation and file formats are unchanged.

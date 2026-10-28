@@ -439,6 +439,13 @@ Copying an empty, one-character or two-character plan name read before the
 name buffer. **2.9:** short names take the normal add-` (2)` path. Turn
 generation and file formats are unchanged.
 
+### All-Space Player Name Read — fixed in 2.9
+
+`util.c`: `PszPlayerName` formed and dereferenced a pointer before its local
+name buffer while trimming a name made entirely of spaces. **2.9:** trimming
+stops at the start of the buffer and uses the existing `No Name` fallback.
+Turn generation and file formats are unchanged.
+
 ### Uncompressed Ship Design Name Overrun — fixed in 2.9
 
 `file.c`: `FReadShDef`. The uncompressed-name path copied record text into
