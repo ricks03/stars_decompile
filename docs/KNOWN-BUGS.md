@@ -431,6 +431,14 @@ base name could overwrite the following game fields. **2.9:** the fallback
 name is truncated and terminated within `game.szName`. Turn generation and
 file formats are unchanged.
 
+### Short Battle-Plan Name Read — fixed in 2.9
+
+`battleui.c`: `BattlePlansDlg` looked for an existing `(digit)` suffix by
+reading the last three characters without first checking the name length.
+Copying an empty, one-character or two-character plan name read before the
+name buffer. **2.9:** short names take the normal add-` (2)` path. Turn
+generation and file formats are unchanged.
+
 ### Uncompressed Ship Design Name Overrun — fixed in 2.9
 
 `file.c`: `FReadShDef`. The uncompressed-name path copied record text into

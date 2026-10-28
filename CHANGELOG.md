@@ -43,6 +43,9 @@ produce different results from a 2.6j host for the same turn.
 
 ### Fixed
 
+- `BattlePlansDlg` no longer reads before a battle plan's name when copying
+  one with fewer than three characters. It still adds the usual ` (2)`
+  suffix. Turn generation and file formats are unchanged.
 - `NewGameDlg` now truncates a long file-derived default title to fit the
   32-byte game name when its name box is blank. Turn generation and file
   formats are unchanged.
