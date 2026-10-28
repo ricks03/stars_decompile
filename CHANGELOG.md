@@ -43,6 +43,9 @@ produce different results from a 2.6j host for the same turn.
 
 ### Fixed
 
+- `NewGameDlg` now truncates a long file-derived default title to fit the
+  32-byte game name when its name box is blank. Turn generation and file
+  formats are unchanged.
 - `NewGameWizard` now gives each temporary race file name the full 16 bytes
   accepted by the race dialogs. A 13- to 15-character name previously ran
   into the next player's slot. Turn generation and file formats are unchanged.

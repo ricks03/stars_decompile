@@ -595,7 +595,8 @@ INT_PTR CALLBACK NewGameDlg(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                 game.fClumping = IsDlgButtonChecked(hwnd, IDC_NEW_GAME_GALAXY_CLUMPING);
                 i = GetWindowText(GetDlgItem(hwnd, IDC_NEW_GAME_NAME), game.szName, 32);
                 if (i == 0) {
-                    strcpy(game.szName, szBase);
+                    strncpy(game.szName, szBase, sizeof(game.szName) - 1);
+                    game.szName[sizeof(game.szName) - 1] = 0;
                 }
             }
             StickyDlgPos(hwnd, &ptStickyNewDlg, FALSE);

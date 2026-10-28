@@ -423,6 +423,14 @@ temporary slots, even though `szRaceFile` holds 16 bytes. A name of 13 to
 **2.9:** each slot now has `sizeof(szRaceFile)` bytes, and all slot offsets
 use that size. Turn generation and file formats are unchanged.
 
+### Blank New-Game Title Overflow — fixed in 2.9
+
+`createui.c`: `NewGameDlg` copied `szBase` without a bound into the
+32-byte `game.szName` when the name box was blank. A long file-derived
+base name could overwrite the following game fields. **2.9:** the fallback
+name is truncated and terminated within `game.szName`. Turn generation and
+file formats are unchanged.
+
 ### Uncompressed Ship Design Name Overrun — fixed in 2.9
 
 `file.c`: `FReadShDef`. The uncompressed-name path copied record text into
