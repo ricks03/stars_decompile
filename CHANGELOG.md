@@ -43,6 +43,9 @@ produce different results from a 2.6j host for the same turn.
 
 ### Fixed
 
+- `NewGameWizard` now gives each temporary race file name the full 16 bytes
+  accepted by the race dialogs. A 13- to 15-character name previously ran
+  into the next player's slot. Turn generation and file formats are unchanged.
 - `UnpackBattlePlan` no longer reads past its stack buffer when a record
   claims a compressed name longer than the bytes the buffer holds. Valid
   names, turn generation and file formats are unchanged.

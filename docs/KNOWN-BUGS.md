@@ -417,6 +417,12 @@ The same tests fail before the fix and pass afterward in a native harness
 using the actual dialog functions with a stubbed file picker. Turn
 generation and file formats are unchanged.
 
+`createui.c`: `NewGameWizard` kept up to 16 race file names in 13-byte
+temporary slots, even though `szRaceFile` holds 16 bytes. A name of 13 to
+15 characters plus its terminator ran into the next player's slot.
+**2.9:** each slot now has `sizeof(szRaceFile)` bytes, and all slot offsets
+use that size. Turn generation and file formats are unchanged.
+
 ### Uncompressed Ship Design Name Overrun — fixed in 2.9
 
 `file.c`: `FReadShDef`. The uncompressed-name path copied record text into
