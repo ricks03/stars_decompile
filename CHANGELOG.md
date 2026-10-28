@@ -43,6 +43,33 @@ produce different results from a 2.6j host for the same turn.
 
 ### Fixed
 
+- `UnpackBattlePlan` no longer reads past its stack buffer when a record
+  claims a compressed name longer than the bytes the buffer holds. Valid
+  names, turn generation and file formats are unchanged.
+- `UnpackBattlePlan` now leaves an invalid compressed name empty instead
+  of storing a 32-character name without a terminator. Valid names, turn
+  generation and file formats are unchanged.
+- `WriteBattlePlan` no longer overruns its stack buffer when saving a
+  31-character name that cannot fit the compressed-name limit. The raw
+  record already held 37 bytes; only its temporary buffer was too small.
+  Turn generation and file formats are unchanged.
+- Opening or saving a race with a long file name no longer overwrites
+  nearby globals (`FOpenGame`, `FSaveRace`). The full chosen path is used
+  for I/O; the remembered name is limited to its 16-byte buffer. Turn
+  generation and file formats are unchanged.
+- `FReadShDef` now reserves the terminator byte when decoding a compressed
+  ship-design name and rejects names that do not fit. A 32-character name
+  previously wrote a NUL into the following hull statistic. Valid names,
+  turn generation and file formats are unchanged.
+- `UnpackBattlePlan` no longer writes an overlong uncompressed name past
+  its 32-byte field into the following battle plan. Valid names, turn
+  generation and file formats are unchanged.
+- `FReadShDef` no longer copies an overlong uncompressed design name into
+  the hull statistics after its 32-byte name field. Valid names, turn
+  generation and file formats are unchanged.
+- The race wizard's habitability estimate no longer copies its 67-character
+  format string into a 32-byte stack buffer (`DrawRace2`). It formats the
+  decoded string directly. Turn generation and file formats are unchanged.
 - The scanner no longer leaves a band drawn out of place when it scrolls
   while a redraw is still pending (`ScrollScanner`), as after a wheel zoom
   followed at once by a trackpad scroll. The original drew the pending

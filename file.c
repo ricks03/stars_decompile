@@ -41,14 +41,19 @@ int16_t FReadShDef(RTSHDEF *lprt, SHDEF *lpshdef, int16_t iplrLoad) {
     cch = *lpb;
     lpb++;
     if (cch == 0) {
-        strcpy(shdef.hul.szClass, lpb);
+        // Raw names still have to fit the saved hull's 32-byte name field.
+        strncpy(shdef.hul.szClass, (char *)lpb, sizeof(shdef.hul.szClass) - 1);
+        shdef.hul.szClass[sizeof(shdef.hul.szClass) - 1] = 0;
     } else {
-        cOut = 32;
+        // FDecompressUserString's character limit excludes its terminator.
+        cOut = sizeof(shdef.hul.szClass) - 1;
         if (cch > 32) {
             return FALSE;
         }
         memmove(szTemp, lpb, cch);
-        FDecompressUserString(szTemp, cch, shdef.hul.szClass, &cOut);
+        if (!FDecompressUserString(szTemp, cch, shdef.hul.szClass, &cOut)) {
+            return FALSE;
+        }
     }
     ishdef = shdef.ishdef;
     if (ishdef >= 16) {
@@ -1165,12 +1170,20 @@ void UnpackBattlePlan(uint8_t *lpb, BTLPLAN *lpbtlplan, int16_t iplan) {
     cch = *lpb;
     lpb++;
     if (cch == 0) {
-        strcpy(lpbtlplan->szName, lpb);
+        // An uncompressed record name must not overwrite the next plan.
+        strncpy(lpbtlplan->szName, (char *)lpb, sizeof(lpbtlplan->szName) - 1);
+        lpbtlplan->szName[sizeof(lpbtlplan->szName) - 1] = 0;
     } else {
-        cOut = 32;
-        memmove(szTemp, lpb, cOut);
-        FDecompressUserString(szTemp, cch, szName, &cOut);
-        memmove(lpbtlplan->szName, szName, cOut);
+        // The plan's 32-byte field includes its terminator.
+        cOut = sizeof(lpbtlplan->szName) - 1;
+        memset(szName, 0, sizeof(szName));
+        // The decoder must not read more encoded bytes than szTemp holds.
+        if (cch < sizeof(szTemp)) {
+            memmove(szTemp, lpb, cch);
+            szTemp[cch] = 0;
+            FDecompressUserString(szTemp, cch, szName, &cOut);
+        }
+        memmove(lpbtlplan->szName, szName, sizeof(lpbtlplan->szName));
     }
     lpbtlplan->iplan = iplan;
     return;

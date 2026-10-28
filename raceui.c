@@ -469,7 +469,7 @@ void DrawRace2(HWND hwnd, HDC hdc, int16_t iDraw) {
     int16_t iPit;
     int16_t bt;
     int16_t iMax;
-    char    szT[32];
+    char    szT[96];
     int16_t dy;
     int16_t iMin;
     int16_t bkMode;
@@ -605,8 +605,7 @@ void DrawRace2(HWND hwnd, HDC hdc, int16_t iDraw) {
             if (l2 == 1) {
                 cch = CchGetString(l == 1000000 ? idsPlanetsWillHabitableRace : idsVirtuallyPlanetsWillHabitableRace, szWork);
             } else {
-                CchGetString(idsCanExpect1DPlanetsWillHabitable, szT);
-                cch = wsprintf(szWork, szT, l2);
+                cch = CchSprintf(szWork, PszGetCompressedString(idsCanExpect1DPlanetsWillHabitable), l2);
             }
             rc.left = vrgrcRCW->left;
             rc.top = vrgrcRCW[15].top + dyArial8 + 8;
@@ -1395,7 +1394,9 @@ int16_t FSaveRace(char *szFileSuggest, PLAYER *pplr) {
         icksum = IRaceChecksum(pplr);
         WriteRt(rtEOF, 2, &icksum);
         StreamClose();
-        strcpy(szRaceFile, &szFile[ofn.nFileOffset]);
+        // The picker accepts longer names than this 16-byte remembered name.
+        strncpy(szRaceFile, &szFile[ofn.nFileOffset], sizeof(szRaceFile) - 1);
+        szRaceFile[sizeof(szRaceFile) - 1] = 0;
         return TRUE;
     }
     return FALSE;

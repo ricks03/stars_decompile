@@ -383,7 +383,122 @@ buffer in the 2.8 build). Nothing read them before they were set again, so
 results did not change; a hardened `strcpy` (macOS) stops the program.
 
 **2.9:** found running `stars-host -a` on macOS. `FWasRaceFile` keeps only
-the file name, cut to fit, as the race dialogs store it.
+the file name, cut to fit. The race dialogs' own copies are discussed below.
+
+### Race Wizard Habitability Message Overrun — fixed in 2.9
+
+`raceui.c`: `DrawRace2`. The habitability estimate copies
+`idsCanExpect1DPlanetsWillHabitable` (67 characters plus its terminator)
+into the original 32-byte `szT` stack buffer before formatting it.
+An AddressSanitizer harness running the function with 20–80 habitability
+bands reproduces the overwrite in `CchGetString`.
+
+**2.9:** `DrawRace2` formats the decoded string directly into `szWork`.
+The same harness completes with the expected estimate. Turn generation
+and file formats are unchanged; the host regression matches the native
+baseline through turn 150 in every scenario.
+
+### Race Dialog File Name Overruns — fixed in 2.9
+
+`raceui.c`: `FSaveRace`; `mdi.c`: `FOpenGame` (race-only path).
+Both copy `&szFile[ofn.nFileOffset]` into the 16-byte global `szRaceFile`
+with `strcpy`. The file dialogs accept paths up to 255 characters and do
+not restrict the file name to 15 characters, so a longer race file name
+overwrites adjacent globals. The earlier `FWasRaceFile` repair did not
+cover these copies.
+
+**2.9:** `FSaveRace` bounds the remembered name to 15 characters and its
+terminator. `FOpenGame` uses the bounded name already set by `FWasRaceFile`.
+The full chosen path is still used for file I/O. The Windows tests in
+`tests/unit/test_race.c` supply picker results and exercise both entry
+points with short, 15-, 16- and longer-character names; the save test also
+checks that `szRacePass` survives and that the full file name was saved.
+The same tests fail before the fix and pass afterward in a native harness
+using the actual dialog functions with a stubbed file picker. Turn
+generation and file formats are unchanged.
+
+### Uncompressed Ship Design Name Overrun — fixed in 2.9
+
+`file.c`: `FReadShDef`. The uncompressed-name path copied record text into
+the 32-byte `HUL.szClass` field without checking the length, overwriting
+the hull statistics after it. `tests/unit/test_file.c` reproduces this
+with 32- and 64-character names in both full and partial design records.
+
+**2.9:** the reader keeps at most 31 characters and a terminator. Empty
+and 31-character names still load unchanged. Valid saves, turn generation
+and file formats are unchanged.
+
+### Uncompressed Battle Plan Name Overrun — fixed in 2.9
+
+`file.c`: `UnpackBattlePlan`. The uncompressed-name path copies record text
+into the 32-byte `BTLPLAN.szName` field without checking the length. A
+harness calling the actual function with a 64-character name overwrites
+33 guard bytes after its `BTLPLAN`.
+
+**2.9:** the reader keeps at most 31 characters and a terminator.
+`tests/unit/test_file.c` checks empty, 31-, 32- and 64-character names,
+the plan's order fields and guard bytes after the plan. Valid saves,
+turn generation and file formats are unchanged.
+
+### Compressed Ship Design Name Overrun — fixed in 2.9
+
+`utilgen.c`: `FDecompressUserString`; `file.c`: `FReadShDef`.
+The decoder accepts up to `*pcOut` decoded characters and then writes a
+terminator. `FReadShDef` passes 32 for its 32-byte `HUL.szClass`, allowing
+a one-byte overrun for exactly 32 decoded characters. A harness passing
+16 zero bytes (32 spaces) to the actual decoder with a 32-byte output
+buffer confirms that the terminator overwrites the following guard byte.
+
+**2.9:** `FReadShDef` gives the decoder a 31-character limit and returns
+failure if decoding fails, before replacing the saved design. The decoder's
+existing convention (maximum characters, excluding the terminator) is
+unchanged. `tests/unit/test_file.c` checks that 31-character compressed
+names load intact and that 32- and 64-character names are rejected without
+changing the destination, for both partial and full records. Valid saves,
+turn generation and file formats are unchanged.
+
+### Battle Plan Write Buffer Overrun — fixed in 2.9
+
+`save.c`: `WriteBattlePlan`. A raw name record contains four header bytes,
+an encoding byte and a terminated name. The writer allocated 36 bytes,
+but a valid 31-character name requires 37 if compression exceeds its
+31-byte limit. `tests/unit/test_save.c` reproduces the stack overwrite
+under AddressSanitizer with a name of 31 slashes (three nibbles each).
+
+**2.9:** the temporary buffer holds the complete raw record. The test
+checks 30- and 31-character names, the record size and content, and the
+name read back through `UnpackBattlePlan`. The bytes written and record
+sizes are unchanged; the original already wrote a 37-byte raw record
+after overrunning its buffer. Turn generation is unchanged.
+
+### Compressed Battle Plan Name Overrun — fixed in 2.9
+
+`file.c`: `UnpackBattlePlan`. The reader decoded up to 32 characters into
+`szName[33]`, then copied only 32 bytes into `BTLPLAN.szName`, dropping
+the terminator for a 32-character name. A later string operation could
+then run into the following plan.
+
+**2.9:** the reader reserves the plan's terminator byte and leaves failed
+decodes empty.
+`tests/unit/test_file.c` retains valid 31-character names at both encoded
+lengths 16 and 31, rejects decoded names of 32 and 64 characters, and checks
+the plan's fields and following guard bytes. Valid saves, turn generation
+and file formats are unchanged.
+
+### Encoded Battle Plan Name Read Overrun — fixed in 2.9
+
+`file.c`: `UnpackBattlePlan`. The reader copied 32 encoded bytes into
+`szTemp[33]`, but passed the record's full encoded count to the decoder.
+A count larger than the scratch buffer let the decoder read past it.
+`tests/unit/test_file.c` reproduces the stack read overrun under
+AddressSanitizer with a 31-character name encoded as 47 bytes.
+
+**2.9:** the reader bounds the encoded count before copying or decoding,
+copies only that count and pads the scratch input with a terminator. A
+name that exceeds the scratch limit stays empty. The regression retains
+a 32-byte encoded name and rejects 33- and 47-byte encoded names, while
+checking the plan's fields and following guard bytes. Valid saves, turn
+generation and file formats are unchanged.
 
 ### AR Starter Colonies — candidate
 
